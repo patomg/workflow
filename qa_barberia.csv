@@ -1,0 +1,14 @@
+question,answers,tags
+cual es el horario de atencion,"Atendemos de lunes a viernes de 10:00 a 20:00 hrs y los sábados de 10:00 a 18:00 hrs. Los domingos estamos cerrados.",horario
+donde estan ubicados,"Estamos en el centro de la ciudad. Escríbenos y te enviamos la ubicación exacta por este chat 📍",ubicacion
+que servicios ofrecen,"Hacemos cortes clásicos, degradados (fade), perfilado y arreglo de barba con toalla caliente, diseño de cejas, cortes para niños, tinte y decoloración.",servicios
+cuanto cuesta un corte de pelo,"El corte clásico cuesta $10.000 y el degradado (fade) $12.000.",precios
+cuanto cuesta arreglar la barba,"El perfilado de barba cuesta $6.000 y el combo corte + barba $15.000.",precios
+hacen cortes para ninos,"Sí, el corte para niños menores de 12 años cuesta $8.000.",precios
+hacen tinte o decoloracion,"Sí, el tinte o decoloración parte desde $20.000 y el precio final depende del largo del pelo. Escríbenos para cotizar.",precios
+como puedo agendar una hora,"Indícanos por este chat el día, la hora y el servicio que quieres, y te confirmamos la disponibilidad al instante ✂️",reservas
+atienden sin hora,"Sí, atendemos por orden de llegada si hay disponibilidad, pero te recomendamos agendar para no esperar.",reservas
+puedo cancelar o cambiar mi hora,"Claro, solo avísanos por este chat con al menos 2 horas de anticipación.",reservas
+cuanto dura un corte,"Un corte dura entre 30 y 45 minutos. Corte + barba dura alrededor de 1 hora.",servicios
+que metodos de pago aceptan,"Aceptamos efectivo, tarjetas de débito y crédito, y transferencia bancaria.",pagos
+venden productos para el pelo,"Sí, tenemos ceras, pomadas y aceites para barba. Pregunta en el local o por este chat por lo que buscas.",productos
