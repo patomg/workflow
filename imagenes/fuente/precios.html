@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+.item { display: flex; align-items: baseline; gap: 16px; margin-bottom: 30px; }
+.item .name { font-size: 40px; font-weight: 600; }
+.item .name small { display: block; font-size: 25px; font-weight: 400; color: #a89c86; margin-top: 6px; }
+.item .dots { flex: 1; border-bottom: 3px dotted rgba(201,162,74,.55); transform: translateY(-10px); }
+.item .price { font-family: 'Oswald'; font-weight: 600; font-size: 50px; color: #c9a24a; white-space: nowrap; }
+.item .price em { font-style: normal; font-family: 'Inter'; font-size: 24px; font-weight: 500; color: #a89c86; margin-right: 8px; }
+.combo { background: rgba(201,162,74,.12); border: 2px solid #c9a24a; border-radius: 16px; padding: 22px 26px; margin: 0 -28px 30px; }
+.combo .item { margin-bottom: 0; }
+.badge { display: inline-block; background: #c9a24a; color: #16130f; font-size: 22px; font-weight: 600;
+  padding: 4px 14px; border-radius: 999px; margin-left: 12px; vertical-align: middle; }
+</style></head>
+<body><div class="card">
+  <div class="brand"><div class="pole"></div><span>BARBERÍA</span><div class="pole"></div></div>
+  <h1>Lista de precios</h1>
+  <div class="rule"><i></i></div>
+
+  <div class="item"><div class="name">Corte clásico</div><div class="dots"></div><div class="price">$10.000</div></div>
+  <div class="item"><div class="name">Degradado (fade)</div><div class="dots"></div><div class="price">$12.000</div></div>
+  <div class="item"><div class="name">Perfilado de barba<small>con toalla caliente</small></div><div class="dots"></div><div class="price">$6.000</div></div>
+  <div class="combo"><div class="item"><div class="name">Combo corte + barba<span class="badge">Ahorras $1.000</span></div><div class="dots"></div><div class="price">$15.000</div></div></div>
+  <div class="item"><div class="name">Corte niños<small>menores de 12 años</small></div><div class="dots"></div><div class="price">$8.000</div></div>
+  <div class="item"><div class="name">Tinte / decoloración<small>según largo del pelo</small></div><div class="dots"></div><div class="price"><em>desde</em>$20.000</div></div>
+
+  <div class="foot">
+    <div class="cta">Agenda tu hora por este chat</div>
+    <div class="small">Efectivo · Débito · Crédito · Transferencia</div>
+  </div>
+</div></body></html>
