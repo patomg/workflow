@@ -147,6 +147,27 @@ Se descartó AWS (aunque Patricio tiene cuenta de estudiante) porque los crédit
 - Publicar el post de LinkedIn con captura del chat.
 - Grabar video demo y definir oferta/precios (ver "Plan de monetización").
 - Hosting (Oracle Cloud) sigue bloqueado por la Cuenta RUT sin saldo.
+- Mejora #7 (imágenes en el bot), ver abajo.
+
+### Mejora #7 — Imágenes en el bot (EN CURSO)
+Idea: que el bot mande una imagen junto al texto cuando la pregunta calce. Máximo 1 imagen por respuesta, nunca en saludos. Con un cliente real se reemplazan por fotos/datos del negocio (argumento de venta: "tu bot muestra TUS cortes").
+
+**Hecho (29-09-2026):** 2 imágenes PNG 1080x1350 estilo barbería (fondo oscuro, dorado, postes de barbero), con los mismos datos de la tabla "q&a barberia". Están en el repo público `patomg/workflow`, carpeta `imagenes/`. Links públicos (probados, responden 200 como image/png):
+- **Lista de precios** → usar en filas de precios (corte, barba, niños, tinte):
+  `https://raw.githubusercontent.com/patomg/workflow/claude/ecstatic-johnson-k1g3wn/imagenes/precios.png`
+- **Horario y medios de pago** → usar en filas "horario" y "métodos de pago":
+  `https://raw.githubusercontent.com/patomg/workflow/claude/ecstatic-johnson-k1g3wn/imagenes/horario.png`
+
+OJO: los links apuntan a la rama `claude/ecstatic-johnson-k1g3wn`. Si esa rama se fusiona a `main` (o se borra), cambiar el nombre de la rama por `main` en los links.
+
+Fuentes editables en `imagenes/fuente/` (HTML + CSS + tipografías Oswald/Inter + `render.js` con playwright-core; correr con `CHROME_PATH=<ruta a chrome> node render.js`). Para un cliente real: editar precios/nombre en el HTML y regenerar.
+
+**Pendiente:**
+1. (Opcional) Collage "Nuestros cortes" (fade, clásico, barba) con fotos gratis de Pexels/Unsplash, que elija Patricio → para la fila "que servicios ofrecen".
+2. Con el conector de n8n (conversación nueva): agregar columna `image` (string) a "q&a barberia" y poner los links en las filas correspondientes.
+3. Hacer que el bot mande la imagen: no está confirmado que el nodo Twilio v1 de n8n soporte adjuntar media. Si no, usar nodo HTTP Request (NO `toolHttpRequest`) a `POST https://api.twilio.com/2010-04-01/Accounts/<SID>/Messages.json`, body form-urlencoded con `From=whatsapp:+14155238886`, `To=<From del Webhook>`, `Body`, `MediaUrl`, usando la credencial predefinida "Twilio account".
+4. Que la IA indique cuándo va imagen (ej. una marca tipo `[IMG:precios]`, parecido a `[ESCALAR]`), o elegir la imagen según el `tag` de la fila. Quitar la marca antes de enviar el texto.
+5. Limitación: el modelo (gpt-oss-20b) solo lee texto; si un cliente MANDA una foto, no la entiende → escalar al dueño.
 
 ---
 
