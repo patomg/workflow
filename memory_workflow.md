@@ -1,19 +1,20 @@
 # Contexto del proyecto: Bot de WhatsApp con IA (n8n + Twilio + Groq)
 
 ## Qué es
-Bot de WhatsApp que responde preguntas frecuentes usando IA, buscando respuestas en una tabla de datos de n8n ("q&a"). Pensado como "proyecto base" para vender como servicio a negocios locales (freelance).
+Bot de WhatsApp que responde preguntas frecuentes usando IA, buscando respuestas en una tabla de datos de n8n. Pensado como "proyecto base" para vender como servicio a negocios locales (freelance).
 
-## Estado actual: FUNCIONANDO end-to-end (actualizado 29-09-2026)
-Probado con éxito: responde preguntas que están en la tabla, y admite honestamente cuando no sabe algo (no inventa respuestas).
+## Estado actual: FUNCIONANDO end-to-end como DEMO DE BARBERÍA (actualizado 29-09-2026, noche)
+Probado con éxito por WhatsApp: responde con la info de la barbería (tabla "q&a barberia"), da la bienvenida de barbería al primer contacto, y admite honestamente cuando no sabe algo (no inventa respuestas).
 
 ---
 
-## Arquitectura del workflow en n8n (actualizada 29-09-2026)
+## Arquitectura del workflow en n8n (actualizada 29-09-2026, demo barbería)
 
 Workflow: **"WhatsApp AI Bot (Twilio + Claude + Data Table)"** (ID: `kUr0MUpa7ey8akeR`)
 
 Flujo principal:
-Webhook → ¿Ya es contacto? → ¿Es nuevo? → (si nuevo: Guardar contacto → Enviar bienvenida (Twilio)) → Leer Q&A → AI Agent → Enviar respuesta (Twilio) → ¿Escalar? → (si sí: Avisar al dueño (Twilio))
+Webhook → ¿Ya es contacto? → ¿Es nuevo? → (si nuevo: Guardar contacto → Enviar bienvenida (Twilio)) → Leer Q&A → AI Agent → ¿Lleva imagen? → (sí: Enviar respuesta con imagen (Twilio) / no: Enviar respuesta (Twilio)) → ¿Escalar? → (si sí: Avisar al dueño (Twilio))
+Si falla el envío con imagen (salida de error) → cae a Enviar respuesta (Twilio) solo texto.
 AI Agent (salida de error, roja) → Mensaje de respaldo (Twilio)
 
 Nodos:
@@ -21,12 +22,14 @@ Nodos:
 2. **¿Ya es contacto?** (`dataTable` v1.1, get): busca en la tabla "contactos" (ID `pxToH6Fe86Yt9pRC`, columna `phone`) el `From` del Webhook. `alwaysOutputData: true` (si no hay fila, igual sigue con un item vacío).
 3. **¿Es nuevo?** (`if` v2.3): verdadero si `$json.id` no existe.
 4. **Guardar contacto** (`dataTable`, insert): guarda `phone` = `From` del Webhook.
-5. **Enviar bienvenida (Twilio)** (`twilio` v1 normal): mensaje de bienvenida fijo. `onError: continueRegularOutput` (si falla, el bot sigue igual).
-6. **Leer Q&A** (`dataTable`, get, returnAll): lee TODA la tabla "q&a" (ID `chwpKBxWSQF63eZg`). `alwaysOutputData: true`.
-7. **AI Agent** (`agent` v2): texto = `{{ $('Webhook').first().json.body.Body }}`. `executeOnce: true` (porque Leer Q&A entrega varios items). `onError: continueErrorOutput`. **SIN tools.** El prompt de sistema incluye todas las filas de la tabla q&a vía expresión (`$('Leer Q&A').all()...`), y le pide responder solo con esa info; si la pregunta no está cubierta, la respuesta debe empezar con la marca `[ESCALAR]`.
+5. **Enviar bienvenida (Twilio)** (`twilio` v1 normal): mensaje de bienvenida fijo de barbería: "¡Hola! 💈 Bienvenido/a a la barbería. Soy el asistente virtual: te respondo al instante sobre precios, horarios y servicios, y te ayudo a agendar tu hora. ¿En qué te ayudo?". `onError: continueRegularOutput` (si falla, el bot sigue igual).
+6. **Leer Q&A** (`dataTable`, get, returnAll): lee TODA la tabla **"q&a barberia"** (ID `lo5BymmN88CmElNE`). `alwaysOutputData: true`. (Para volver a la demo genérica, apuntarlo de nuevo a "q&a", ID `chwpKBxWSQF63eZg`, y revertir bienvenida + primera línea del prompt.)
+7. **AI Agent** (`agent` v2): texto = `{{ $('Webhook').first().json.body.Body }}`. `executeOnce: true` (porque Leer Q&A entrega varios items). `onError: continueErrorOutput`. **SIN tools.** El prompt de sistema parte con "Eres el asistente virtual de una barbería y respondes por WhatsApp..." e incluye todas las filas de la tabla q&a vía expresión (`$('Leer Q&A').all()...`), y le pide responder solo con esa info; si la pregunta no está cubierta, la respuesta debe empezar con la marca `[ESCALAR]`.
 8. **Simple Memory** (`memoryBufferWindow` v1.3): sessionKey = `{{ $('Webhook').first().json.body.From }}`, ventana 10.
 9. **Groq Chat Model** (`lmChatGroq` v1): modelo `openai/gpt-oss-20b`, temperatura 0.2. Credencial "Groq account 2".
-10. **Enviar respuesta (Twilio)** (`twilio` v1 normal): mensaje = output del Agent sin la marca `[ESCALAR]`; si viene vacío manda el mensaje de respaldo.
+10. **Enviar respuesta (Twilio)** (`twilio` v1 normal): mensaje = output del Agent (`$('AI Agent').first()`) sin las marcas `[ESCALAR]` e `[IMG:n]`; si viene vacío manda el mensaje de respaldo.
+10b. **¿Lleva imagen?** (`if`): verdadero si el output trae una marca `[IMG:<id>]` que corresponde a una fila de Leer Q&A con columna `image` llena, Y no trae `[ESCALAR]`.
+10c. **Enviar respuesta con imagen (Twilio)** (`httpRequest` v4.2): POST `https://api.twilio.com/2010-04-01/Accounts/<Account SID>/Messages.json` (el SID real está puesto en el nodo; sale en la consola de Twilio o en el output de cualquier nodo Twilio como `account_sid`. NO subirlo al repo público), autenticación predefinida `twilioApi` (credencial "Twilio account"), body form-urlencoded: `From=whatsapp:+14155238886`, `To` = From del Webhook (ya trae `whatsapp:`), `Body` = texto limpio, `MediaUrl` = link de la fila. `onError: continueErrorOutput` → salida de error va a Enviar respuesta (Twilio) para que al menos llegue el texto. (El nodo Twilio v1 de n8n NO soporta adjuntar media, por eso se usa HTTP Request.)
 11. **¿Escalar?** (`if`): verdadero si el output del Agent contiene `[ESCALAR]`.
 12. **Avisar al dueño (Twilio)**: manda a WhatsApp de Patricio (número fijo en el nodo, inscrito en el Sandbox) el número del cliente y su mensaje. Con cliente real, cambiar el "To" al número del negocio.
 13. **Mensaje de respaldo (Twilio)**: conectado a la salida de error del AI Agent. Mensaje fijo "Uy, tuvimos un problema técnico...".
@@ -44,10 +47,16 @@ Antes el AI Agent usaba tools (`dataTableTool` para buscar y `twilioTool` para r
 - Si se agregan nodos entre el Webhook y el Agent, referenciar `$('Webhook').first().json.body...` en vez de `$json.body...`.
 ---
 
-## Data Table "q&a" (ID `chwpKBxWSQF63eZg`)
-Columnas usadas: `question`, `answers`, `tags` (hay columnas viejas sin usar: `Name`, `email`, `isTrusted`, resabios de una tabla de ejemplo de n8n).
+## Data Tables (proyecto n8n `dTNxfHdPQwPEufSw`)
 
-Tiene 11 filas: 1 original ("como ser programador?") + 10 genéricas de atención al cliente (horario, ubicación, métodos de pago, envíos, garantía, contacto, redes sociales, descuentos por mayor, agendar hora). Pensadas como demo genérica, no de un negocio específico todavía.
+### "q&a barberia" (ID `lo5BymmN88CmElNE`) — LA QUE USA EL BOT HOY
+Columnas: `question`, `answers`, `tags`, `image` (string; `image` agregada el 29-09-2026 = link público a una imagen, vacío si la fila no lleva imagen). Filas con imagen: las 4 de tag `precios` → precios.png; `horario` y `pagos` → horario.png. 13 filas cargadas desde `qa_barberia.csv` (horario, ubicación, servicios, precios de corte/barba/niños/tinte, agendar, sin hora, cancelar, duración, pagos, productos). Precios de ejemplo en CLP, ficticios para la demo (corte clásico $10.000, fade $12.000, barba $6.000, combo $15.000, niños $8.000, tinte desde $20.000; domingos cerrado).
+
+### "q&a" (ID `chwpKBxWSQF63eZg`) — demo genérica, ya no conectada
+Columnas usadas: `question`, `answers`, `tags` (hay columnas viejas sin usar: `Name`, `email`, `isTrusted`, resabios de una tabla de ejemplo de n8n). 11 filas: 1 original ("como ser programador?") + 10 genéricas de atención al cliente. Se dejó intacta por si se quiere volver a la demo genérica.
+
+### "contactos" (ID `pxToH6Fe86Yt9pRC`)
+Columna `phone` (formato `whatsapp:+569...`). Para volver a ver la bienvenida con un número, hay que borrar su fila. El conector MCP de n8n NO tiene herramienta para borrar filas: el 29-09-2026 se hizo con un workflow temporal (Manual Trigger → Data Table `deleteRows` con filtro `phone` = número), se ejecutó una vez y se archivó ("TEMP - Borrar contacto de prueba", ID `fVBDGKSLYpkRum14`). También se puede borrar a mano desde la UI de n8n (Data tables → contactos).
 
 ---
 
@@ -80,10 +89,11 @@ Tiene 11 filas: 1 original ("como ser programador?") + 10 genéricas de atenció
 ## Plan de monetización (en curso)
 Dirección elegida: vender como servicio freelance a negocios locales (pymes), usando el bot mismo como demo en vivo para cerrar clientes.
 
-Pasos sugeridos (pendientes de ejecutar):
-1. Grabar un video corto de demo.
+Pasos sugeridos:
+0. ✅ **Post de LinkedIn redactado** (29-09-2026): presenta el bot (responde precios/horarios/servicios, bienvenida, escala a humano sin inventar, mensaje de respaldo, respuestas editables en tabla), stack n8n + Twilio + Groq, aprendizajes, y cierra invitando a negocios a escribirle. Sugerencia: acompañarlo con captura/video del chat de barbería, tapando números de teléfono. Pendiente: que Patricio lo publique.
+1. Grabar un video corto de demo (idea: cliente pregunta precio de un fade → pide hora → hace una pregunta fuera de la tabla y se escala).
 2. Definir el pitch/oferta y precios (en CLP).
-3. Empezar por contactos conocidos.
+3. Empezar por contactos conocidos (barberías/peluquerías primero, ya que la demo es de ese rubro).
 
 ### Prerrequisitos técnicos para vender de VERDAD (no solo demo)
 1. **Hosting real** (que no dependa del PC prendido) — EN PROGRESO, ver abajo.
@@ -128,21 +138,51 @@ Se descartó AWS (aunque Patricio tiene cuenta de estudiante) porque los crédit
 2. ✅ **Mensaje de respaldo si el bot falla** — hecho (salida de error del AI Agent → Twilio).
 3. ✅ **Mensaje de bienvenida al primer contacto** — hecho (tabla "contactos"). Probado OK.
 4. ✅ **Escalar a humano** — hecho (marca `[ESCALAR]` + aviso al WhatsApp de Patricio). Probado OK.
-5. ✅ **Monitoreo con UptimeRobot** — cuenta creada (login con Google), monitor HTTP(s) sobre `https://scouring-staunch-robe.ngrok-free.dev/healthz` cada 5 min, en verde. PENDIENTE confirmar que avisa: cerrar n8n, esperar 5-10 min y ver si llega email "Down" (ojo: la página de advertencia de ngrok gratis podría hacer que marque "Up" aunque n8n esté caído).
-6. 🔄 **Demo de rubro específico: PELUQUERÍA / BARBERÍA** (elegido por Patricio) — EN CURSO, ver abajo.
+5. ✅ **Monitoreo con UptimeRobot** — cuenta creada (login con Google), monitor HTTP(s) sobre `https://scouring-staunch-robe.ngrok-free.dev/healthz` cada 5 min, en verde. No hay que cerrar nada en UptimeRobot al terminar. PENDIENTE confirmar que avisa: al apagar el PC/n8n debería llegar email "Down" en 5-10 min (ojo: la página de advertencia de ngrok gratis podría hacer que marque "Up" aunque n8n esté caído). Si no quiere emails mientras el PC está apagado: abrir el monitor → Pause (y Resume al volver).
+6. ✅ **Demo de rubro específico: PELUQUERÍA / BARBERÍA** — HECHO el 29-09-2026 con el conector de n8n:
+   - Creada tabla "q&a barberia" (ID `lo5BymmN88CmElNE`) con las 13 filas de `qa_barberia.csv`.
+   - Leer Q&A apunta a la tabla nueva; bienvenida y primera línea del prompt cambiadas a barbería (regla `[ESCALAR]` intacta).
+   - Workflow publicado. Patricio probó por WhatsApp y responde bien.
+   - Se borró su número (`whatsapp:+569...` de Patricio) de "contactos" para que vuelva a recibir la bienvenida en el siguiente mensaje (útil para la captura del post).
 
-### Tarea #6 — plan (hacer con el conector de n8n)
-El contenido ya está listo en `qa_barberia.csv` (13 preguntas: horario, ubicación, servicios, precios de corte/barba/niños/tinte, agendar, sin hora, cancelar, duración, pagos, productos). Precios de ejemplo en CLP, ficticios para la demo.
-1. Crear data table nueva **"q&a barberia"** con columnas `question`, `answers`, `tags` (string) y cargar las filas del CSV (`add_data_table_rows`). Se crea tabla nueva en vez de borrar filas porque el conector no tiene herramienta para borrar filas; además deja la demo genérica intacta.
-2. En el nodo **Leer Q&A**, cambiar `dataTableId` a la tabla nueva.
-3. Cambiar el mensaje de **Enviar bienvenida (Twilio)** a algo de barbería, ej.: "¡Hola! 💈 Bienvenido/a a la barbería. Soy el asistente virtual: te respondo al instante sobre precios, horarios y servicios, y te ayudo a agendar tu hora. ¿En qué te ayudo?"
-4. Ajustar la primera línea del prompt de sistema del AI Agent: "Eres el asistente virtual de una barbería..." (mantener el resto, incluida la regla `[ESCALAR]`).
-5. Publicar y pedirle a Patricio que pruebe (ej. "cuánto sale un fade?", "atienden el domingo?", y algo fuera de la tabla para ver el escalamiento). Para volver a ver la bienvenida, borrar su fila en la tabla "contactos".
+### Próximos pasos sugeridos (cuando se retome)
+- Confirmar alerta "Down" de UptimeRobot (ver punto 5).
+- Publicar el post de LinkedIn con captura del chat.
+- Grabar video demo y definir oferta/precios (ver "Plan de monetización").
+- Hosting (Oracle Cloud) sigue bloqueado por la Cuenta RUT sin saldo.
+- Mejora #7 (imágenes en el bot), ver abajo.
+
+### Mejora #7 — Imágenes en el bot (IMPLEMENTADA, falta probar por WhatsApp)
+Idea: que el bot mande una imagen junto al texto cuando la pregunta calce. Máximo 1 imagen por respuesta, nunca en saludos. Con un cliente real se reemplazan por fotos/datos del negocio (argumento de venta: "tu bot muestra TUS cortes").
+
+**Hecho (29-09-2026):** 2 imágenes PNG 1080x1350 estilo barbería (fondo oscuro, dorado, postes de barbero), con los mismos datos de la tabla "q&a barberia". Están en el repo público `patomg/workflow`, carpeta `imagenes/`. Links públicos (probados, responden 200 como image/png):
+- **Lista de precios** → usar en filas de precios (corte, barba, niños, tinte):
+  `https://raw.githubusercontent.com/patomg/workflow/claude/ecstatic-johnson-k1g3wn/imagenes/precios.png`
+- **Horario y medios de pago** → usar en filas "horario" y "métodos de pago":
+  `https://raw.githubusercontent.com/patomg/workflow/claude/ecstatic-johnson-k1g3wn/imagenes/horario.png`
+
+OJO: los links apuntan a la rama `claude/ecstatic-johnson-k1g3wn`. Si esa rama se fusiona a `main` (o se borra), cambiar el nombre de la rama por `main` en los links.
+
+Fuentes editables en `imagenes/fuente/` (HTML + CSS + tipografías Oswald/Inter + `render.js` con playwright-core; correr con `CHROME_PATH=<ruta a chrome> node render.js`). Para un cliente real: editar precios/nombre en el HTML y regenerar.
+
+**Hecho (29-09-2026, noche) con el conector de n8n — workflow PUBLICADO, falta prueba por WhatsApp:**
+- Columna `image` agregada a "q&a barberia" y links cargados (con workflow temporal "TEMP - Cargar imagenes en q&a barberia", ID `P4iquw885YsrBflP`, ya archivado).
+- El prompt del AI Agent ahora muestra `Imagen: [IMG:<id de fila>]` en las filas que tienen imagen, y le pide agregar esa marca al final (máx. 1, nunca en saludos ni con `[ESCALAR]`).
+- Nodos nuevos `¿Lleva imagen?` + `Enviar respuesta con imagen (Twilio)` (ver arquitectura). El texto va como pie de la imagen en UN solo mensaje.
+- Para que el dueño de un negocio agregue/cambie imágenes: solo editar la columna `image` de la fila en la tabla (sin tocar el workflow).
+
+**Pendiente:**
+1. PROBAR por WhatsApp: "cuánto cuesta un fade" (debe llegar imagen de precios + texto), "a qué hora abren" (imagen de horario), "hola" (sin imagen), algo fuera de la tabla (escala, sin imagen). Si la imagen no llega, revisar la ejecución en n8n (nodo "Enviar respuesta con imagen").
+2. Riesgo conocido: gpt-oss-20b podría olvidar la marca o poner una equivocada → en ese caso solo llega el texto (no se rompe nada).
+3. (Opcional) Collage "Nuestros cortes" (fade, clásico, barba) con fotos gratis de Pexels/Unsplash, que elija Patricio → para la fila "que servicios ofrecen".
+4. Limitación: el modelo (gpt-oss-20b) solo lee texto; si un cliente MANDA una foto, no la entiende → escalar al dueño.
 
 ---
 
 ## Nota sobre el conector de n8n
-El conector MCP de n8n permite operar el workflow directamente sin capturas. Se desconecta a veces a mitad de conversación (error `404 CLIENT_HTTP_NOT_IMPLEMENTED`). Reconectarlo NO revive la conexión en la MISMA conversación — hay que abrir una conversación nueva. Pasó de nuevo el 29-09-2026 justo antes de la tarea #6; por eso se actualizó este archivo.
+El conector MCP de n8n permite operar el workflow directamente sin capturas. Se desconecta a veces a mitad de conversación (error `404 CLIENT_HTTP_NOT_IMPLEMENTED`). Reconectarlo NO revive la conexión en la MISMA conversación — hay que abrir una conversación nueva. Pasó de nuevo el 29-09-2026 justo antes de la tarea #6 (se retomó en conversación nueva y funcionó), y otra vez al final de esa sesión, después de terminar todo.
+
+Herramientas del conector útiles ya usadas: `get_workflow_details`, `update_workflow` (con `setNodeParameter`), `publish_workflow`, `search_data_tables`, `create_data_table`, `add_data_table_rows`, `search_workflow_executions` / `get_workflow_execution` (para ver qué llegó al Webhook), `create_workflow_from_code` + `execute_workflow` + `archive_workflow` (workflows temporales de mantenimiento). No existe herramienta para leer ni borrar filas de una tabla directamente.
 
 ---
 
