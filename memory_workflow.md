@@ -150,9 +150,9 @@ Se descartó AWS (aunque Patricio tiene cuenta de estudiante) porque los crédit
 - Publicar el post de LinkedIn con captura del chat.
 - Grabar video demo y definir oferta/precios (ver "Plan de monetización").
 - Hosting (Oracle Cloud) sigue bloqueado por la Cuenta RUT sin saldo.
-- Mejora #7 (imágenes en el bot), ver abajo.
+- Mejora #7 (imágenes) HECHA; opcional: collage "Nuestros cortes".
 
-### Mejora #7 — Imágenes en el bot (IMPLEMENTADA, falta probar por WhatsApp)
+### Mejora #7 — Imágenes en el bot (HECHA y probada con precios)
 Idea: que el bot mande una imagen junto al texto cuando la pregunta calce. Máximo 1 imagen por respuesta, nunca en saludos. Con un cliente real se reemplazan por fotos/datos del negocio (argumento de venta: "tu bot muestra TUS cortes").
 
 **Hecho (29-09-2026):** 2 imágenes PNG 1080x1350 estilo barbería (fondo oscuro, dorado, postes de barbero), con los mismos datos de la tabla "q&a barberia". Están en el repo público `patomg/workflow`, carpeta `imagenes/`. Links públicos (probados, responden 200 como image/png):
@@ -165,14 +165,14 @@ OJO: los links apuntan a la rama `claude/ecstatic-johnson-k1g3wn`. Si esa rama s
 
 Fuentes editables en `imagenes/fuente/` (HTML + CSS + tipografías Oswald/Inter + `render.js` con playwright-core; correr con `CHROME_PATH=<ruta a chrome> node render.js`). Para un cliente real: editar precios/nombre en el HTML y regenerar.
 
-**Hecho (29-09-2026, noche) con el conector de n8n — workflow PUBLICADO, falta prueba por WhatsApp:**
+**Hecho (29-09-2026, noche) con el conector de n8n — workflow PUBLICADO. Patricio probó por WhatsApp y llegó bien la imagen de precios con el texto:**
 - Columna `image` agregada a "q&a barberia" y links cargados (con workflow temporal "TEMP - Cargar imagenes en q&a barberia", ID `P4iquw885YsrBflP`, ya archivado).
 - El prompt del AI Agent ahora muestra `Imagen: [IMG:<id de fila>]` en las filas que tienen imagen, y le pide agregar esa marca al final (máx. 1, nunca en saludos ni con `[ESCALAR]`).
 - Nodos nuevos `¿Lleva imagen?` + `Enviar respuesta con imagen (Twilio)` (ver arquitectura). El texto va como pie de la imagen en UN solo mensaje.
 - Para que el dueño de un negocio agregue/cambie imágenes: solo editar la columna `image` de la fila en la tabla (sin tocar el workflow).
 
 **Pendiente:**
-1. PROBAR por WhatsApp: "cuánto cuesta un fade" (debe llegar imagen de precios + texto), "a qué hora abren" (imagen de horario), "hola" (sin imagen), algo fuera de la tabla (escala, sin imagen). Si la imagen no llega, revisar la ejecución en n8n (nodo "Enviar respuesta con imagen").
+1. (Opcional) Probar también "a qué hora abren" (imagen de horario), "hola" (sin imagen) y algo fuera de la tabla (escala, sin imagen). Si una imagen no llega, revisar la ejecución en n8n (nodo "Enviar respuesta con imagen").
 2. Riesgo conocido: gpt-oss-20b podría olvidar la marca o poner una equivocada → en ese caso solo llega el texto (no se rompe nada).
 3. (Opcional) Collage "Nuestros cortes" (fade, clásico, barba) con fotos gratis de Pexels/Unsplash, que elija Patricio → para la fila "que servicios ofrecen".
 4. Limitación: el modelo (gpt-oss-20b) solo lee texto; si un cliente MANDA una foto, no la entiende → escalar al dueño.
