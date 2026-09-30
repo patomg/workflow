@@ -192,6 +192,7 @@ Al principio del proyecto se entregó un JSON del workflow + un README vía desc
 ---
 
 ## Estilo de comunicación con Patricio
+- **Comando canario:** empezar SIEMPRE cada respuesta con la palabra "Patricio" en la primera línea. Si no aparece, Patricio sabe que algo falló (por ejemplo, que no se leyó esta memoria).
 - Es principiante en n8n, prefiere explicaciones paso a paso con capturas de pantalla cuando no hay conector activo.
 - Sin plata por ahora ("no tengo nada de plata") — cualquier recomendación de costo debe ser honesta sobre alternativas gratis primero.
 - Prefiere ir resolviendo un tema a la vez (ej. explícitamente pidió resolver hosting antes que material de venta, y luego mejoras locales antes que seguir con hosting).
