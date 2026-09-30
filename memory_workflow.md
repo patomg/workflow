@@ -46,7 +46,7 @@ Todos los nodos Twilio: from `+14155238886` (Sandbox), to = `From` del Webhook c
 - Cuando el cliente toca una opción, a Twilio le llega un mensaje con `Body` = título de la opción (ej. "Precios") y `ListId` (ej. `precios`). El bot usa `Body` como siempre, y el prompt le explica las opciones. "Hablar con una persona" → `[ESCALAR]`.
 - Las listas NO necesitan aprobación de WhatsApp, pero solo funcionan dentro de la ventana de 24 h desde el último mensaje del cliente (siempre se cumple porque el bot responde).
 - Límites: máx. 10 opciones, título ≤ 24 caracteres, descripción ≤ 72, botón ≤ 20. Para cambiar las opciones hay que crear una plantilla nueva (no se editan) y poner el nuevo SID en los 2 nodos HTTP del menú + actualizar la lista de opciones en el prompt.
-- PENDIENTE: probar por WhatsApp (que se vea la lista en el Sandbox). Si falla, cae solo a texto.
+- PROBADO OK el 30-09-2026 en el Sandbox: "hola" → llegó la lista; tocar "Precios" → llegó `Body`="precios", `ListId`="precios", `MessageType`="interactive", y el bot respondió con los precios + imagen. Falta probar "Hablar con una persona" y la bienvenida con menú (borrar el número de "contactos").
 
 ### Por qué se quitaron las tools (29-09-2026)
 Antes el AI Agent usaba tools (`dataTableTool` para buscar y `twilioTool` para responder) para esquivar el bug de "output vacío" de modelos gratis. Pero `gpt-oss-20b` en Groq corrompe los nombres de las tools (ej. `responder<|channel|>commentary` → error 400 `tool_use_failed`) y además seguía en loop después de responder, lo que mandaba respuesta + mensaje de error. Solución: sin tools, tabla completa en el prompt, y envío con nodo Twilio normal. Funciona bien. Si la tabla creciera mucho (cientos de filas) habría que volver a un esquema de búsqueda.
