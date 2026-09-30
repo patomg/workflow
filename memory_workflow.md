@@ -13,8 +13,8 @@ Probado con éxito por WhatsApp: responde con la info de la barbería (tabla "q&
 Workflow: **"WhatsApp AI Bot (Twilio + Claude + Data Table)"** (ID: `kUr0MUpa7ey8akeR`)
 
 Flujo principal:
-Webhook → ¿Ya es contacto? → ¿Es nuevo? → (si nuevo: Guardar contacto → Enviar bienvenida (Twilio)) → Leer Q&A → AI Agent → ¿Lleva imagen? → (sí: Enviar respuesta con imagen (Twilio) / no: Enviar respuesta (Twilio)) → ¿Escalar? → (si sí: Avisar al dueño (Twilio))
-Si falla el envío con imagen (salida de error) → cae a Enviar respuesta (Twilio) solo texto.
+Webhook → ¿Ya es contacto? → ¿Es nuevo? → (si nuevo: Guardar contacto → Enviar bienvenida con menú (Twilio)) → Leer Q&A → AI Agent → ¿Mostrar menú? → (sí: ¿Contacto nuevo? → si NO es nuevo: Enviar menú (Twilio); si es nuevo no manda nada porque ya recibió el menú en la bienvenida / no: ¿Lleva imagen? → (sí: Enviar respuesta con imagen (Twilio) / no: Enviar respuesta (Twilio)) → ¿Escalar? → (si sí: Avisar al dueño (Twilio)))
+Si falla el envío con imagen o del menú (salida de error) → cae a Enviar respuesta (Twilio) solo texto. Si falla la bienvenida con menú → cae a Enviar bienvenida (Twilio) solo texto.
 AI Agent (salida de error, roja) → Mensaje de respaldo (Twilio)
 
 Nodos:
@@ -22,19 +22,31 @@ Nodos:
 2. **¿Ya es contacto?** (`dataTable` v1.1, get): busca en la tabla "contactos" (ID `pxToH6Fe86Yt9pRC`, columna `phone`) el `From` del Webhook. `alwaysOutputData: true` (si no hay fila, igual sigue con un item vacío).
 3. **¿Es nuevo?** (`if` v2.3): verdadero si `$json.id` no existe.
 4. **Guardar contacto** (`dataTable`, insert): guarda `phone` = `From` del Webhook.
-5. **Enviar bienvenida (Twilio)** (`twilio` v1 normal): mensaje de bienvenida fijo de barbería: "¡Hola! 💈 Bienvenido/a a la barbería. Soy el asistente virtual: te respondo al instante sobre precios, horarios y servicios, y te ayudo a agendar tu hora. ¿En qué te ayudo?". `onError: continueRegularOutput` (si falla, el bot sigue igual).
+5. **Enviar bienvenida con menú (Twilio)** (`httpRequest` v4.2, igual que 10c pero con `ContentSid` del menú y `ContentVariables` = `{"1": "¡Hola! 💈 Bienvenido/a ... Toca Ver opciones o escríbeme tu pregunta 👇"}`). `onError: continueErrorOutput` → error va a:
+5b. **Enviar bienvenida (Twilio)** (`twilio` v1 normal): respaldo en solo texto: "¡Hola! 💈 Bienvenido/a a la barbería. Soy el asistente virtual: te respondo al instante sobre precios, horarios y servicios, y te ayudo a agendar tu hora. ¿En qué te ayudo?". `onError: continueRegularOutput`.
 6. **Leer Q&A** (`dataTable`, get, returnAll): lee TODA la tabla **"q&a barberia"** (ID `lo5BymmN88CmElNE`). `alwaysOutputData: true`. (Para volver a la demo genérica, apuntarlo de nuevo a "q&a", ID `chwpKBxWSQF63eZg`, y revertir bienvenida + primera línea del prompt.)
 7. **AI Agent** (`agent` v2): texto = `{{ $('Webhook').first().json.body.Body }}`. `executeOnce: true` (porque Leer Q&A entrega varios items). `onError: continueErrorOutput`. **SIN tools.** El prompt de sistema parte con "Eres el asistente virtual de una barbería y respondes por WhatsApp..." e incluye todas las filas de la tabla q&a vía expresión (`$('Leer Q&A').all()...`), y le pide responder solo con esa info; si la pregunta no está cubierta, la respuesta debe empezar con la marca `[ESCALAR]`.
 8. **Simple Memory** (`memoryBufferWindow` v1.3): sessionKey = `{{ $('Webhook').first().json.body.From }}`, ventana 10.
 9. **Groq Chat Model** (`lmChatGroq` v1): modelo `openai/gpt-oss-20b`, temperatura 0.2. Credencial "Groq account 2".
-10. **Enviar respuesta (Twilio)** (`twilio` v1 normal): mensaje = output del Agent (`$('AI Agent').first()`) sin las marcas `[ESCALAR]` e `[IMG:n]`; si viene vacío manda el mensaje de respaldo.
+10. **Enviar respuesta (Twilio)** (`twilio` v1 normal): mensaje = output del Agent (`$('AI Agent').first()`) sin las marcas `[ESCALAR]`, `[MENU]` e `[IMG:n]`; si viene vacío manda el mensaje de respaldo.
 10b. **¿Lleva imagen?** (`if`): verdadero si el output trae una marca `[IMG:<id>]` que corresponde a una fila de Leer Q&A con columna `image` llena, Y no trae `[ESCALAR]`.
 10c. **Enviar respuesta con imagen (Twilio)** (`httpRequest` v4.2): POST `https://api.twilio.com/2010-04-01/Accounts/<Account SID>/Messages.json` (el SID real está puesto en el nodo; sale en la consola de Twilio o en el output de cualquier nodo Twilio como `account_sid`. NO subirlo al repo público), autenticación predefinida `twilioApi` (credencial "Twilio account"), body form-urlencoded: `From=whatsapp:+14155238886`, `To` = From del Webhook (ya trae `whatsapp:`), `Body` = texto limpio, `MediaUrl` = link de la fila. `onError: continueErrorOutput` → salida de error va a Enviar respuesta (Twilio) para que al menos llegue el texto. (El nodo Twilio v1 de n8n NO soporta adjuntar media, por eso se usa HTTP Request.)
+10d. **¿Mostrar menú?** (`if`): verdadero si el output trae `[MENU]` y no trae `[ESCALAR]`. La IA pone `[MENU]` en saludos, agradecimientos, cuando piden opciones o no queda claro qué necesitan.
+10e. **¿Contacto nuevo?** (`if`): verdadero si `$('¿Ya es contacto?').first().json.id` no existe (el contacto recién recibió el menú en la bienvenida → no se manda nada más). Falso → Enviar menú.
+10f. **Enviar menú (Twilio)** (`httpRequest` v4.2): como 10c pero con `ContentSid=HX8dd27fb0bab842ff44cb0470ee523601` y `ContentVariables` = JSON `{"1": texto limpio de la IA en una sola línea, o "¿En qué te ayudo?"}`. Error → Enviar respuesta (Twilio).
 11. **¿Escalar?** (`if`): verdadero si el output del Agent contiene `[ESCALAR]`.
 12. **Avisar al dueño (Twilio)**: manda a WhatsApp de Patricio (número fijo en el nodo, inscrito en el Sandbox) el número del cliente y su mensaje. Con cliente real, cambiar el "To" al número del negocio.
 13. **Mensaje de respaldo (Twilio)**: conectado a la salida de error del AI Agent. Mensaje fijo "Uy, tuvimos un problema técnico...".
 
 Todos los nodos Twilio: from `+14155238886` (Sandbox), to = `From` del Webhook con `.replace('whatsapp:', '')`, `toWhatsapp: true`, credencial "Twilio account".
+
+### Menú de opciones con lista de WhatsApp (30-09-2026, Mejora #8)
+- Plantilla de Twilio Content API tipo `twilio/list-picker`, nombre `menu_barberia`, SID `HX8dd27fb0bab842ff44cb0470ee523601`. Creada con un workflow temporal (POST `https://content.twilio.com/v1/Content`, credencial predefinida `twilioApi`; "TEMP - Crear menu lista en Twilio", ID `37RSJ5OYcEsCUywn`, archivado).
+- Cuerpo = variable `{{1}}` (se le pasa el texto por `ContentVariables`), botón "Ver opciones", 7 opciones: Precios, Horario, Servicios, Agendar una hora, Medios de pago, Ubicación, Hablar con una persona. También trae versión `twilio/text` de respaldo.
+- Cuando el cliente toca una opción, a Twilio le llega un mensaje con `Body` = título de la opción (ej. "Precios") y `ListId` (ej. `precios`). El bot usa `Body` como siempre, y el prompt le explica las opciones. "Hablar con una persona" → `[ESCALAR]`.
+- Las listas NO necesitan aprobación de WhatsApp, pero solo funcionan dentro de la ventana de 24 h desde el último mensaje del cliente (siempre se cumple porque el bot responde).
+- Límites: máx. 10 opciones, título ≤ 24 caracteres, descripción ≤ 72, botón ≤ 20. Para cambiar las opciones hay que crear una plantilla nueva (no se editan) y poner el nuevo SID en los 2 nodos HTTP del menú + actualizar la lista de opciones en el prompt.
+- PROBADO OK el 30-09-2026 en el Sandbox: "hola" → llegó la lista; tocar "Precios" → llegó `Body`="precios", `ListId`="precios", `MessageType`="interactive", y el bot respondió con los precios + imagen. Falta probar "Hablar con una persona" y la bienvenida con menú (borrar el número de "contactos").
 
 ### Por qué se quitaron las tools (29-09-2026)
 Antes el AI Agent usaba tools (`dataTableTool` para buscar y `twilioTool` para responder) para esquivar el bug de "output vacío" de modelos gratis. Pero `gpt-oss-20b` en Groq corrompe los nombres de las tools (ej. `responder<|channel|>commentary` → error 400 `tool_use_failed`) y además seguía en loop después de responder, lo que mandaba respuesta + mensaje de error. Solución: sin tools, tabla completa en el prompt, y envío con nodo Twilio normal. Funciona bien. Si la tabla creciera mucho (cientos de filas) habría que volver a un esquema de búsqueda.
@@ -174,7 +186,7 @@ Fuentes editables en `imagenes/fuente/` (HTML + CSS + tipografías Oswald/Inter 
 **Pendiente:**
 1. (Opcional) Probar también "a qué hora abren" (imagen de horario), "hola" (sin imagen) y algo fuera de la tabla (escala, sin imagen). Si una imagen no llega, revisar la ejecución en n8n (nodo "Enviar respuesta con imagen").
 2. Riesgo conocido: gpt-oss-20b podría olvidar la marca o poner una equivocada → en ese caso solo llega el texto (no se rompe nada).
-3. (POSTERGADO por decisión de Patricio: la demo queda así, sin collage) Collage "Nuestros cortes": la plantilla ya está en `imagenes/fuente/cortes.html` (espacios para foto-fade.jpg, foto-clasico.jpg, foto-barba.jpg en esa carpeta; generar con `node render.js cortes`). Faltan las fotos; este entorno no puede descargar de Pexels/Unsplash (red bloqueada), así que Patricio tendría que subirlas al chat. Cuando esté, poner su link en la columna `image` de la fila "que servicios ofrecen".
+3. Collage "Nuestros cortes": por decisión de Patricio, la demo usa la PLANTILLA SIN FOTOS (recuadros "FOTO FADE / CLÁSICO / BARBA") como imagen de la fila "que servicios ofrecen" (id 3). Link: `https://raw.githubusercontent.com/patomg/workflow/claude/stoic-meitner-246a3c/imagenes/cortes.png` (cargado el 30-09-2026 con workflow temporal `KkzUza6plmQEQUwF`, archivado). OJO: cuando cortes.png esté en la rama principal (`claude/zen-clarke-y0j322`), conviene cambiar el link a esa rama. Para poner fotos reales: dejar foto-fade.jpg, foto-clasico.jpg y foto-barba.jpg en `imagenes/fuente/`, correr `node render.js cortes` y volver a subir cortes.png (este entorno no puede descargar de Pexels/Unsplash; Patricio tiene que subir las fotos al chat).
 4. Limitación: el modelo (gpt-oss-20b) solo lee texto; si un cliente MANDA una foto, no la entiende → escalar al dueño.
 
 ---
