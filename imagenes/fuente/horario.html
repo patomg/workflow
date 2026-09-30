@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+.day { display: flex; justify-content: space-between; align-items: center; padding: 26px 0;
+  border-bottom: 2px solid rgba(201,162,74,.25); }
+.day .d { font-size: 44px; font-weight: 600; }
+.day .h { font-family: 'Oswald'; font-weight: 600; font-size: 54px; color: #c9a24a; letter-spacing: 1px; }
+.day.closed .h { color: #a89c86; }
+h2 { font-family: 'Oswald'; font-weight: 600; font-size: 40px; letter-spacing: 6px; color: #c9a24a;
+  text-align: center; text-transform: uppercase; margin: 50px 0 26px; }
+.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
+.chip { border: 2px solid #c9a24a; border-radius: 999px; padding: 12px 22px; font-size: 27px; font-weight: 500; }
+h1 { line-height: 1.2; margin-top: 20px; }
+.rule { margin: 26px auto 34px; }
+</style></head>
+<body><div class="card">
+  <div class="brand"><div class="pole"></div><span>BARBERÍA</span><div class="pole"></div></div>
+  <h1>Horario de atención</h1>
+  <div class="rule"><i></i></div>
+
+  <div class="day"><div class="d">Lunes a viernes</div><div class="h">10:00 – 20:00</div></div>
+  <div class="day"><div class="d">Sábado</div><div class="h">10:00 – 18:00</div></div>
+  <div class="day closed" style="border-bottom:none"><div class="d">Domingo</div><div class="h">Cerrado</div></div>
+
+  <h2>Medios de pago</h2>
+  <div class="chips">
+    <div class="chip">Efectivo</div><div class="chip">Débito</div><div class="chip">Crédito</div><div class="chip">Transferencia</div>
+  </div>
+
+  <div class="foot">
+    <div class="cta">Agenda tu hora por este chat</div>
+    <div class="small">También atendemos sin hora, según disponibilidad</div>
+  </div>
+</div></body></html>

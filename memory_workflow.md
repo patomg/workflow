@@ -174,7 +174,7 @@ Fuentes editables en `imagenes/fuente/` (HTML + CSS + tipografías Oswald/Inter 
 **Pendiente:**
 1. (Opcional) Probar también "a qué hora abren" (imagen de horario), "hola" (sin imagen) y algo fuera de la tabla (escala, sin imagen). Si una imagen no llega, revisar la ejecución en n8n (nodo "Enviar respuesta con imagen").
 2. Riesgo conocido: gpt-oss-20b podría olvidar la marca o poner una equivocada → en ese caso solo llega el texto (no se rompe nada).
-3. (Opcional) Collage "Nuestros cortes" (fade, clásico, barba) con fotos gratis de Pexels/Unsplash, que elija Patricio → para la fila "que servicios ofrecen".
+3. (POSTERGADO por decisión de Patricio: la demo queda así, sin collage) Collage "Nuestros cortes": la plantilla ya está en `imagenes/fuente/cortes.html` (espacios para foto-fade.jpg, foto-clasico.jpg, foto-barba.jpg en esa carpeta; generar con `node render.js cortes`). Faltan las fotos; este entorno no puede descargar de Pexels/Unsplash (red bloqueada), así que Patricio tendría que subirlas al chat. Cuando esté, poner su link en la columna `image` de la fila "que servicios ofrecen".
 4. Limitación: el modelo (gpt-oss-20b) solo lee texto; si un cliente MANDA una foto, no la entiende → escalar al dueño.
 
 ---
