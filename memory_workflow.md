@@ -115,7 +115,9 @@ Pasos sugeridos:
 
 ---
 
-## Hosting: estado de la investigación (EN CURSO, bloqueado por tarjeta)
+## Hosting: estado (EN CURSO — registro de Oracle COMPLETADO el 09-10-2026)
+
+**Novedad 09-10-2026:** Patricio confirmó que el registro en Oracle Cloud ya está listo (se destrabó el bloqueo de la tarjeta). Siguiente paso: crear la VM Ampere A1 (Always Free) — ver "Plan de hosting" más abajo. Lo que sigue (bloqueo de la tarjeta) queda como historial.
 
 Se descartó AWS (aunque Patricio tiene cuenta de estudiante) porque los créditos estudiantiles se GASTAN con el uso — no sirven para algo que debe quedar prendido 24/7 indefinidamente.
 
@@ -127,7 +129,8 @@ Se descartó AWS (aunque Patricio tiene cuenta de estudiante) porque los crédit
 - Datos ya usados en el signup de Oracle: país Chile, usuario `pato_gc@outlook.cl`, nombre de cuenta `patogc`, región `Chile Central (Santiago)`.
 
 ### Plan de hosting cuando se retome
-1. Cargar ~$3.000 CLP a la Cuenta RUT y completar el registro en Oracle Cloud (VM Ampere gratis).
+1. ✅ Completar el registro en Oracle Cloud (hecho, 09-10-2026).
+1b. Crear la VM: Compute → Instances → Create instance, Ubuntu (aarch64), shape `VM.Standard.A1.Flex` (sugerido 2 OCPU / 12 GB; el máximo gratis es 4 OCPU / 24 GB en total), VCN nueva con subred pública + IP pública, y guardar la llave SSH privada (.key). Si sale "Out of capacity", reintentar más tarde o con menos OCPU. Ojo: Oracle puede recuperar instancias Always Free muy ociosas (uso <20% durante 7 días); vigilarlo cuando esté corriendo.
 2. Instalar Docker + n8n en la VM.
 3. HTTPS con Caddy (certificado automático gratis) + subdominio gratis de DuckDNS (ya que Twilio exige HTTPS).
 4. Migrar el workflow (exportar/importar) y los datos de la tabla q&a.
@@ -161,7 +164,7 @@ Se descartó AWS (aunque Patricio tiene cuenta de estudiante) porque los crédit
 - Confirmar alerta "Down" de UptimeRobot (ver punto 5).
 - Publicar el post de LinkedIn con captura del chat.
 - Grabar video demo y definir oferta/precios (ver "Plan de monetización").
-- Hosting (Oracle Cloud) sigue bloqueado por la Cuenta RUT sin saldo.
+- Hosting (Oracle Cloud): registro listo (09-10-2026); siguiente paso crear la VM Ampere.
 - Mejora #7 (imágenes) HECHA; opcional: collage "Nuestros cortes".
 
 ### Mejora #7 — Imágenes en el bot (HECHA y probada con precios)
