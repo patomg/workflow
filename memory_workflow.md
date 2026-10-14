@@ -119,6 +119,7 @@ Pasos sugeridos:
 
 **Novedad 09-10-2026:** Patricio confirmó que el registro en Oracle Cloud ya está listo (se destrabó el bloqueo de la tarjeta). Siguiente paso: crear la VM Ampere A1 (Always Free) — ver "Plan de hosting" más abajo. Lo que sigue (bloqueo de la tarjeta) queda como historial.
 **Actualización 13-10-2026:** Patricio volvió a crear la cuenta y está "esperando confirmación" de Oracle (aprovisionamiento). El Cloud Account Name podría ya no ser `patogc`: confirmarlo en el email de bienvenida de Oracle cuando llegue. Recomendado crear la VM desde el PC (no el celular) para que la llave SSH `.key` quede en el PC.
+**14-10-2026:** llegó el correo de Oracle, cuenta ACTIVA. Siguiente: entrar a cloud.oracle.com con el Cloud Account Name del correo y crear la VM (paso 1b).
 
 Se descartó AWS (aunque Patricio tiene cuenta de estudiante) porque los créditos estudiantiles se GASTAN con el uso — no sirven para algo que debe quedar prendido 24/7 indefinidamente.
 
