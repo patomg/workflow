@@ -77,6 +77,7 @@ Columna `phone` (formato `whatsapp:+569...`). Para volver a ver la bienvenida co
 - **n8n**: se corre con `npx n8n` (no requiere carpeta fija).
 - **ngrok**: dominio fijo gratis reservado: `scouring-staunch-robe.ngrok-free.dev`. Ejecutable en `C:\Users\pato_\AppData\Local\Microsoft\WinGet\Links\ngrok.exe` (NO usar el paquete npm de ngrok, Windows Defender lo bloquea como falso positivo).
 - **Problema de versiones de Node resuelto**: el PC tiene 3 instalaciones de Node compitiendo (fnm, nvm-windows en `C:\nvm4w\nodejs`, y una standalone en `C:\Program Files\nodejs`). `fnm` gana la carrera del PATH y estaba clavado en v18 (rompe n8n). Fix aplicado: se corrió `nvm use 22.22.3` como Administrador para fijar la versión 22 en `C:\nvm4w\nodejs`, y el script de auto-inicio fuerza ese path al principio del PATH para evitar que fnm interfiera.
+- **Remote Control de Claude Code** (15-10-2026): Patricio lo dejó funcionando en su PC (`claude remote-control` en PowerShell) para manejar el PC desde el celular (comandos y archivos, sin pantalla). Para ver la pantalla: Chrome Remote Desktop. La sesión de Claude en la nube NO llega al PC; el trabajo local (SSH a la VM, comandos) se hace desde la sesión de Remote Control.
 - **Script de auto-inicio creado**: `iniciar-bot.bat` en el Escritorio. Contenido:
   ```bat
   @echo off
